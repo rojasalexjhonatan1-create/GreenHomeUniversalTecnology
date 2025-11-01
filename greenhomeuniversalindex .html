@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Green Home</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#0a1a0f;color:#e8f5e9;min-height:100vh}
+header{background:linear-gradient(90deg,#1e8449,#27ae60);color:white;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 4px 15px rgba(0,0,0,0.3);position:sticky;top:0;z-index:100}
+.container{max-width:100%;margin:16px auto;padding:0 12px}
+.card{background:#12291a;border-radius:16px;padding:20px;margin-bottom:16px;box-shadow:0 6px 25px rgba(0,0,0,0.2);border:1px solid #1e8449}
+.hidden{display:none}
+.tabs{display:flex;gap:6px;overflow-x:auto;padding:8px 0;white-space:nowrap;-webkit-overflow-scrolling:touch}
+.tabs button{padding:10px 14px;border:none;border-radius:12px;cursor:pointer;background:#1e8449;color:white;font-weight:600;font-size:14px;min-width:80px;transition:0.3s}
+.tabs button.active{background:#27ae60;box-shadow:0 0 10px #27ae60}
+input,button,select{width:100%;padding:12px;margin-top:10px;border-radius:12px;border:1px solid #2ecc71;font-size:15px;background:#12291a;color:#e8f5e9}
+button.action{background:#27ae60;color:white;font-weight:bold;border:none;cursor:pointer;box-shadow:0 0 8px #27ae60;font-size:16px}
+.row{display:flex;gap:12px}
+.col{flex:1}
+.shop-grid,.tree-admin-grid{display:grid;grid-template-columns:1fr;gap:14px;margin-top:12px}
+.tree-card,.tree-admin-card{background:linear-gradient(135deg,#1a3d2a,#12291a);border-radius:16px;padding:16px;text-align:center;box-shadow:0 6px 20px rgba(0,0,0,0.3);transition:0.3s;border:1px solid #2ecc71}
+.tree-card:active,.tree-admin-card:active{transform:scale(0.98)}
+.tree-card img,.tree-admin-card img{width:100%;height:120px;object-fit:cover;border-radius:12px;margin-bottom:10px;filter:brightness(1.1)}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#27ae60;color:white;padding:12px 24px;border-radius:12px;opacity:0;transition:0.3s;z-index:1000;box-shadow:0 0 15px rgba(0,0,0,0.3);font-size:14px}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(-10px)}
+.progress{width:100%;height:10px;background:#0f1f14;border-radius:5px;margin-top:10px;overflow:hidden;border:1px solid #2ecc71}
+.progress-bar{height:100%;background:linear-gradient(90deg,#27ae60,#2ecc71);width:0;transition:width 0.5s}
+.deposit-box{background:#0f1f14;padding:16px;border-radius:12px;margin-top:16px;text-align:center;border:1px solid #2ecc71}
+.deposit-box input{background:#12291a;font-family:monospace;font-size:13px}
+.qr-img{width:140px;height:140px;margin:12px auto;display:block;border:2px solid #2ecc71;border-radius:12px}
+@keyframes harvest {0% { transform: scale(1); }50% { transform: scale(1.04); filter: brightness(1.6); }100% { transform: scale(1); }}
+.harvest-animation { animation: harvest 0.6s ease-in-out; }
+.cycle-badge{background:#f39c12;color:white;padding:4px 10px;border-radius:10px;font-size:12px;font-weight:bold}
+.btn-small{font-size:13px;padding:8px 12px;margin-top:6px}
+h3{font-size:18px;color:#27ae60;margin-bottom:12px}
+p{font-size:14px;line-height:1.5}
+small{font-size:12px;color:#95a5a6}
+</style>
+</head>
+<body>
+
+<header>
+  <div><strong>Green Home</strong></div>
+  <div>
+    <span id="balanceBadge">USDT 0.00</span>
+    <button id="btnLogout" class="hidden btn-small">Salir</button>
+  </div>
+</header>
+
+<div class="container">
+
+<!-- Registro/Login -->
+<div id="authCard" class="card">
+  <h3>Acceso</h3>
+  <input id="email" type="email" placeholder="Correo">
+  <input id="password" type="password" placeholder="Contraseña">
+  <div class="row">
+    <div class="col"><button id="btnRegister" class="action">Registrarme</button></div>
+    <div class="col"><button id="btnLogin" class="action">Entrar</button></div>
+  </div>
+  <p id="refMessage" style="margin-top:10px;font-size:13px;color:#27ae60"></p>
+</div>
+
+<!-- Dashboard -->
+<div id="dashboard" class="hidden">
+  <div class="tabs">
+    <button class="tabBtn active" data-tab="accountTab">Cuenta</button>
+    <button class="tabBtn" data-tab="shopTab">Tienda</button>
+    <button class="tabBtn" data-tab="teamTab">Equipo</button>
+    <button class="tabBtn" data-tab="convertTab">Convertir</button>
+    <button class="tabBtn" data-tab="fundsTab">Fondos</button>
+    <button class="tabBtn" data-tab="treeAdminTab">Admin Árboles</button>
+    <button class="tabBtn" data-tab="walletAdminTab">Admin Billeteras</button>
+  </div>
+
+  <!-- CUENTA -->
+  <div id="accountTab" class="card tabContent">
+    <h3>Mi Bosque</h3>
+    <p><strong>Email:</strong> <span id="displayEmail">—</span></p>
+    <p><strong>Saldo:</strong> <span id="saldoUsdt">0.00</span> USDT</p>
+    <p><strong>CO2:</strong> <span id="energyKg">0.00</span> kg</p>
+    <div class="progress"><div id="collectProgress" class="progress-bar"></div></div>
+    <button id="btnCollectEnergy" class="action">Recolectar (7h)</button>
+  </div>
+
+  <!-- TIENDA -->
+  <div id="shopTab" class="card tabContent hidden">
+    <h3>Tienda (50 USDT)</h3>
+    <div id="shopGrid" class="shop-grid"></div>
+  </div>
+
+  <!-- EQUIPO -->
+  <div id="teamTab" class="card tabContent hidden">
+    <h3>Mi Equipo</h3>
+    <p>Link de invitación:</p>
+    <input id="myRefLink" readonly style="font-size:12px">
+    <button class="btn-small" onclick="navigator.clipboard.writeText(document.getElementById('myRefLink').value); showToast('¡Copiado!')">Copiar</button>
+    <div id="teamList" style="margin-top:16px"></div>
+  </div>
+
+  <!-- CONVERTIR -->
+  <div id="convertTab" class="card tabContent hidden">
+    <h3>Convertir</h3>
+    <p><strong>Saldo:</strong> <span id="saldoConvert">0.00</span> USDT</p>
+    <p><strong>CO2:</strong> <span id="energyConvert">0.00</span> kg</p>
+    <input id="usdtToKgAmount" type="number" min="1" step="0.01" placeholder="USDT  CO2">
+    <button id="btnUsdtToKg" class="action">Convertir</button>
+    <input id="kgToUsdtAmount" type="number" min="1" step="0.01" placeholder="CO2  USDT">
+    <button id="btnKgToUsdt" class="action">Convertir</button>
+  </div>
+
+  <!-- FONDOS -->
+  <div id="fundsTab" class="card tabContent hidden">
+    <h3>Fondos</h3>
+    <select id="walletSelect">
+      <option value="OKX">OKX</option>
+      <option value="LemonCash">Lemon Cash</option>
+      <option value="Binance">Binance</option>
+    </select>
+    <input id="fundAmount" type="number" min="30" step="10" placeholder="Cantidad (mín. 30)">
+    <div class="row">
+      <div class="col"><button id="btnDeposit" class="action">Depositar</button></div>
+      <div class="col"><button id="btnWithdraw" class="action">Retirar</button></div>
+    </div>
+    <div id="depositBox" class="deposit-box hidden">
+      <h4>Depositar USDT</h4>
+      <p>Envía <strong id="depositAmt">0</strong> USDT a:</p>
+      <input id="depositAddress" readonly>
+      <button class="btn-small" onclick="navigator.clipboard.writeText(document.getElementById('depositAddress').value); showToast('¡Copiada!')">Copiar</button>
+      <img id="qrCode" class="qr-img" src="">
+      <p style="font-size:12px;color:#e74c3c;margin-top:8px">Mínimo: 50 USDT | Red: TRC20</p>
+    </div>
+    <p id="withdrawStatus" style="font-size:12px;margin-top:8px;color:#f39c12"></p>
+  </div>
+
+  <!-- ADMIN ARBOLES -->
+  <div id="treeAdminTab" class="card tabContent hidden">
+    <h3>Administración de Árboles</h3>
+    <div id="treeAdminGrid" class="tree-admin-grid"></div>
+    <h4>Agregar / Editar Árbol</h4>
+    <input id="adminTreeId" placeholder="ID (vacío = nuevo)">
+    <input id="adminTreeName" placeholder="Nombre">
+    <input id="adminTreePrice" type="number" placeholder="Precio USDT">
+    <input id="adminTreeProfitKg" type="number" placeholder="kg / 7h">
+    <input id="adminTreeImage" placeholder="URL imagen">
+    <button id="btnSaveTree" class="action">Guardar Árbol</button>
+  </div>
+
+  <!-- ADMIN BILLETERAS -->
+  <div id="walletAdminTab" class="card tabContent hidden">
+    <h3>Administración de Billeteras</h3>
+    <h4>Depósitos (mín. 50 USDT)</h4>
+    <input id="walletDepositOKX" placeholder="Link OKX">
+    <input id="walletDepositLemon" placeholder="Link Lemon Cash">
+    <input id="walletDepositBinance" placeholder="Link Binance">
+    <h4>Retiros (mín. 30 USDT)</h4>
+    <input id="walletWithdrawOKX" placeholder="Link OKX">
+    <input id="walletWithdrawLemon" placeholder="Link Lemon Cash">
+    <input id="walletWithdrawBinance" placeholder="Link Binance">
+    <button id="btnSaveWallets" class="action">Guardar Billeteras</button>
+  </div>
+
+</div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+// ====== Config ======
+const CYCLE_HOURS = 7;
+const KG_TO_USDT = 0.1;
+
+// ====== Datos (localStorage) ======
+let trees = JSON.parse(localStorage.getItem('trees')) || [
+  {id:'t1',name:'Eucalipto Real',price:50,profitKg:20,image:'https://images.unsplash.com/photo-1581092580496-e0d23cbdf1dc?w=400'},
+  {id:'t2',name:'Cedro Andino',price:75,profitKg:30,image:'https://images.unsplash.com/photo-1553279768-865429fa0078?w=400'},
+  {id:'t3',name:'Ceibo Gigante',price:100,profitKg:40,image:'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=400'},
+  {id:'t4',name:'Quina Imperial',price:150,profitKg:60,image:'https://images.unsplash.com/photo-1627483234651-4d29a7b6b4e7?w=400'},
+  {id:'t5',name:'Huarango',price:200,profitKg:80,image:'https://images.unsplash.com/photo-1509391366360-2e959784a276?w=400'},
+  {id:'t6',name:'Palo Santo',price:300,profitKg:120,image:'https://images.unsplash.com/photo-1581093588401-f45d82a5c5d8?w=400'}
+];
+function saveTrees(){ localStorage.setItem('trees', JSON.stringify(trees)); }
+
+let wallets = JSON.parse(localStorage.getItem('wallets')) || {
+  deposit: {OKX:'',LemonCash:'',Binance:''},
+  withdraw: {OKX:'',LemonCash:'',Binance:''}
+};
+function saveWallets(){ localStorage.setItem('wallets', JSON.stringify(wallets)); }
+
+// ====== Usuarios ======
+let users = [], currentUser = null;
+function saveUsers(){ localStorage.setItem('users', JSON.stringify(users)); }
+function loadUsers(){ const u = localStorage.getItem('users'); if(u) users = JSON.parse(u); }
+function saveCurrentUser(){ localStorage.setItem('currentUser', JSON.stringify(currentUser)); localStorage.setItem('currentUserEmail', currentUser.email); }
+function loadCurrentUser(){ const u = localStorage.getItem('currentUser'); if(u) currentUser = JSON.parse(u); }
+
+// ====== Utils ======
+function hash(str){ let h=0; for(let i=0;i<str.length;i++) h=(h*31+str.charCodeAt(i))&0xFFFFFFFF; return h.toString(16); }
+function showToast(msg,time=2500){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),time); }
+
+// ====== Render ======
+function renderAccount(){
+  if(!currentUser) return;
+  document.getElementById('displayEmail').textContent = currentUser.email;
+  document.getElementById('saldoUsdt').textContent = currentUser.balance.toFixed(2);
+  document.getElementById('energyKg').textContent = currentUser.energy.toFixed(1);
+  document.getElementById('balanceBadge').textContent = `USDT ${currentUser.balance.toFixed(2)}`;
+  document.getElementById('saldoConvert').textContent = currentUser.balance.toFixed(2);
+  document.getElementById('energyConvert').textContent = currentUser.energy.toFixed(1);
+  document.getElementById('myRefLink').value = currentUser.refLink;
+  renderShop(); renderTeam(); renderTreeAdmin(); updateProgress();
+}
+
+function updateProgress(){
+  let total=0, max=0;
+  currentUser.trees.forEach(t => {
+    const hours = (Date.now() - t.lastCollect) / 3600000;
+    const cycles = Math.floor(hours / CYCLE_HOURS);
+    total += cycles * t.profitKg;
+    const partial = (hours % CYCLE_HOURS) / CYCLE_HOURS;
+    max += t.profitKg * partial;
+  });
+  const pct = max > 0 ? (total % max) / max * 100 : 0;
+  document.getElementById('collectProgress').style.width = pct + '%';
+}
+
+// ====== Tabs ======
+document.querySelectorAll('.tabBtn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tabBtn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.tabContent').forEach(tab => tab.classList.add('hidden'));
+    document.getElementById(btn.dataset.tab).classList.remove('hidden');
+  });
+});
+
+// ====== Login / Registro ======
+const urlParams = new URLSearchParams(window.location.search);
+const refCode = urlParams.get('ref');
+if(refCode) document.getElementById('refMessage').textContent = `Invitado: ${refCode}`;
+
+document.getElementById('btnRegister').addEventListener('click', () => {
+  loadUsers();
+  const email = document.getElementById('email').value.trim().toLowerCase();
+  const pass = document.getElementById('password').value;
+  if(!email || pass.length < 6) return showToast('Datos inválidos');
+  if(users.find(u => u.email === email)) return showToast('Ya existe');
+  const refLink = location.origin + location.pathname + '?ref=' + Math.random().toString(36).substr(2,8);
+  currentUser = {email, pass: hash(pass), balance: 100, energy: 0, trees: [], refLink, team: []};
+  if(refCode){
+    const ref = users.find(u => u.refLink.includes(refCode));
+    if(ref){ ref.team.push(email); ref.balance += 20; }
+  }
+  users.push(currentUser); saveUsers(); saveCurrentUser(); finishLogin();
+});
+
+document.getElementById('btnLogin').addEventListener('click', () => {
+  loadUsers();
+  const email = document.getElementById('email').value.trim().toLowerCase();
+  const pass = document.getElementById('password').value;
+  const user = users.find(u => u.email === email && u.pass === hash(pass));
+  if(!user) return showToast('Error');
+  currentUser = user; saveCurrentUser(); finishLogin();
+});
+
+function finishLogin(){
+  document.getElementById('authCard').classList.add('hidden');
+  document.getElementById('dashboard').classList.remove('hidden');
+  document.getElementById('btnLogout').classList.remove('hidden');
+  renderAccount();
+  setInterval(renderAccount, 10000);
+}
+
+document.getElementById('btnLogout').onclick = () => { currentUser = null; localStorage.removeItem('currentUserEmail'); location.reload(); };
+
+// ====== Recolectar ======
+document.getElementById('btnCollectEnergy').onclick = () => {
+  let total = 0; const now = Date.now();
+  currentUser.trees.forEach(t => {
+    const hours = (now - t.lastCollect) / 3600000;
+    const cycles = Math.floor(hours / CYCLE_HOURS);
+    if(cycles > 0){ total += cycles * t.profitKg; t.lastCollect = now - (hours % CYCLE_HOURS) * 3600000; }
+  });
+  if(total > 0.1){
+    currentUser.energy += total; saveUsers(); saveCurrentUser(); renderAccount();
+    document.getElementById('accountTab').classList.add('harvest-animation');
+    setTimeout(() => document.getElementById('accountTab').classList.remove('harvest-animation'), 600);
+    showToast(`+${total.toFixed(1)} kg CO2`, 3000);
+  } else showToast(`Espera ${CYCLE_HOURS}h`);
+};
+
+// ====== Tienda ======
+function renderShop(){
+  const grid = document.getElementById('shopGrid'); grid.innerHTML = '';
+  trees.forEach(t => {
+    const div = document.createElement('div'); div.className = 'tree-card';
+    const can = currentUser.balance >= t.price;
+    const dailyKg = (t.profitKg * (24 / CYCLE_HOURS)).toFixed(0);
+    const dailyUsdt = (dailyKg * KG_TO_USDT).toFixed(1);
+    const roi = (t.price / (t.profitKg * (24 / CYCLE_HOURS) * KG_TO_USDT)).toFixed(2);
+    div.innerHTML = `
+      <img src="${t.image}" loading="lazy">
+      <h4 style="margin:6px 0;color:#2ecc71">${t.name}</h4>
+      <p style="font-size:13px">
+        <strong>${t.price} USDT</strong><br>
+        <span style="color:#27ae60">${t.profitKg} kg /7h</span><br>
+        <span style="color:#f1c40f">${(t.profitKg*KG_TO_USDT).toFixed(1)} USDT /7h</span><br>
+        <span class="cycle-badge">ROI: ${roi}d</span><br>
+        <small>${dailyKg} kg / ${dailyUsdt} USDT por día</small>
+      </p>
+      <button ${!can?'disabled':''} style="background:${can?'#27ae60':'#34495e'};margin-top:8px">
+        ${can?'Plantar':'Sin saldo'}
+      </button>
+    `;
+    div.querySelector('button').onclick = () => {
+      if(!can) return;
+      currentUser.balance -= t.price;
+      currentUser.trees.push({...t, lastCollect: Date.now()});
+      saveUsers(); saveCurrentUser(); renderAccount();
+      showToast(`¡${t.name} plantado!`);
+    };
+    grid.appendChild(div);
+  });
+}
+
+// ====== Equipo ======
+function renderTeam(){
+  const list = document.getElementById('teamList');
+  list.innerHTML = '<h4 style="color:#27ae60">Referidos:</h4>';
+  if(!currentUser.team.length) list.innerHTML += '<p>Ninguno</p>';
+  else currentUser.team.forEach(u => list.innerHTML += `<p>• ${u}</p>`);
+}
+
+// ====== Conversión ======
+document.getElementById('btnUsdtToKg').onclick = () => {
+  const amt = Number(document.getElementById('usdtToKgAmount').value);
+  if(isNaN(amt) || amt <= 0 || amt > currentUser.balance) return showToast('Inválido');
+  currentUser.balance -= amt; currentUser.energy += amt / KG_TO_USDT;
+  saveUsers(); saveCurrentUser(); renderAccount();
+  showToast(`${amt} USDT  ${(amt / KG_TO_USDT).toFixed(1)} kg`);
+};
+
+document.getElementById('btnKgToUsdt').onclick = () => {
+  const amt = Number(document.getElementById('kgToUsdtAmount').value);
+  if(isNaN(amt) || amt <= 0 || amt > currentUser.energy) return showToast('Inválido');
+  currentUser.energy -= amt; currentUser.balance += amt * KG_TO_USDT;
+  saveUsers(); saveCurrentUser(); renderAccount();
+  showToast(`${amt} kg  ${(amt * KG_TO_USDT).toFixed(2)} USDT`);
+};
+
+// ====== RETIRO CON MENSAJE EN 3 MINUTOS ======
+let withdrawTimeout = null;
+
+document.getElementById('btnWithdraw').onclick = () => {
+  const amt = Number(document.getElementById('fundAmount').value);
+  if(isNaN(amt) || amt < 30) return showToast('Mínimo 30 USDT');
+  if(amt > currentUser.balance) return showToast('Sin saldo');
+
+  const fee = amt * 0.05;
+  const net = amt + fee;
+
+  if(net > currentUser.balance) return showToast('Saldo insuficiente (incluye 5% comisión)');
+
+  // Descuenta el dinero
+  currentUser.balance -= net;
+  saveUsers(); saveCurrentUser(); renderAccount();
+
+  // Muestra estado
+  const status = document.getElementById('withdrawStatus');
+  status.textContent = `Procesando retiro de ${amt} USDT...`;
+  status.style.color = '#f39c12';
+
+  showToast(`Retiro solicitado: ${amt} USDT (-${fee.toFixed(2)} comisión)`);
+
+  // Limpia cualquier timeout anterior
+  if(withdrawTimeout) clearTimeout(withdrawTimeout);
+
+  // Después de 3 minutos  Aprobado
+  withdrawTimeout = setTimeout(() => {
+    status.textContent = `¡Retiro de ${amt} USDT aprobado!`;
+    status.style.color = '#27ae60';
+    showToast(`¡Retiro de ${amt} USDT aprobado!`, 4000);
+  }, 3 * 60 * 1000); // 3 minutos
+};
+
+// ====== Depósito ======
+document.getElementById('btnDeposit').onclick = () => {
+  const amt = Number(document.getElementById('fundAmount').value);
+  if(isNaN(amt) || amt < 50 || amt % 10 !== 0) return showToast('Mín. 50, múltiplos de 10');
+  const wallet = document.getElementById('walletSelect').value;
+  const link = wallets.deposit[wallet];
+  if(!link || link === '') return showToast('Configura el enlace en Admin');
+  document.getElementById('depositBox').classList.remove('hidden');
+  document.getElementById('depositAmt').textContent = amt;
+  document.getElementById('depositAddress').value = link;
+  document.getElementById('qrCode').src = `https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=${encodeURIComponent(link)}`;
+  showToast(`Abre ${wallet} y envía ${amt} USDT`);
+};
+
+// ====== Admin Árboles ======
+function renderTreeAdmin(){
+  const grid = document.getElementById('treeAdminGrid'); grid.innerHTML = '';
+  trees.forEach(t => {
+    const div = document.createElement('div'); div.className = 'tree-admin-card';
+    div.innerHTML = `
+      <img src="${t.image}" loading="lazy">
+      <h4 style="margin:6px 0;color:#2ecc71">${t.name}</h4>
+      <p style="font-size:13px"><strong>${t.price} USDT</strong> - ${t.profitKg} kg/7h</p>
+      <button class="btn-small" onclick="editTree('${t.id}')">Editar</button>
+      <button class="btn-small" style="background:#e74c3c" onclick="deleteTree('${t.id}')">Eliminar</button>
+    `;
+    grid.appendChild(div);
+  });
+}
+
+function editTree(id){
+  const t = trees.find(x => x.id === id);
+  if(!t) return;
+  document.getElementById('adminTreeId').value = t.id;
+  document.getElementById('adminTreeName').value = t.name;
+  document.getElementById('adminTreePrice').value = t.price;
+  document.getElementById('adminTreeProfitKg').value = t.profitKg;
+  document.getElementById('adminTreeImage').value = t.image;
+}
+
+function deleteTree(id){
+  if(confirm('¿Eliminar árbol?')){
+    trees = trees.filter(x => x.id !== id);
+    saveTrees(); renderShop(); renderTreeAdmin();
+    showToast('Árbol eliminado');
+  }
+}
+
+document.getElementById('btnSaveTree').onclick = () => {
+  const id = document.getElementById('adminTreeId').value.trim();
+  const name = document.getElementById('adminTreeName').value.trim();
+  const price = Number(document.getElementById('adminTreePrice').value);
+  const profitKg = Number(document.getElementById('adminTreeProfitKg').value);
+  const image = document.getElementById('adminTreeImage').value.trim();
+  if(!name || !image || isNaN(price) || isNaN(profitKg) || price < 50 || profitKg <= 0) return showToast('Datos inválidos');
+  if(id){
+    const t = trees.find(x => x.id === id);
+    if(t){ t.name = name; t.price = price; t.profitKg = profitKg; t.image = image; }
+  } else {
+    const newId = 't' + (trees.length + 1);
+    trees.push({id: newId, name, price, profitKg, image});
+  }
+  saveTrees(); renderShop(); renderTreeAdmin();
+  showToast('Árbol guardado');
+  ['adminTreeId','adminTreeName','adminTreePrice','adminTreeProfitKg','adminTreeImage'].forEach(x => document.getElementById(x).value = '');
+};
+
+// ====== Admin Billeteras ======
+document.getElementById('btnSaveWallets').onclick = () => {
+  wallets.deposit.OKX = document.getElementById('walletDepositOKX').value.trim();
+  wallets.deposit.LemonCash = document.getElementById('walletDepositLemon').value.trim();
+  wallets.deposit.Binance = document.getElementById('walletDepositBinance').value.trim();
+  wallets.withdraw.OKX = document.getElementById('walletWithdrawOKX').value.trim();
+  wallets.withdraw.LemonCash = document.getElementById('walletWithdrawLemon').value.trim();
+  wallets.withdraw.Binance = document.getElementById('walletWithdrawBinance').value.trim();
+  saveWallets();
+  showToast('Billeteras guardadas');
+};
+
+// ====== Inicio ======
+loadUsers(); loadCurrentUser();
+if(localStorage.getItem('currentUserEmail')){
+  currentUser = users.find(u => u.email === localStorage.getItem('currentUserEmail'));
+  if(currentUser) finishLogin();
+}
+</script>
+
+</body>
+</html>
